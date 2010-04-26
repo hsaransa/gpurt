@@ -1,0 +1,18 @@
+CUDA ray tracer for GPGPU course
+--------------------------------
+
+Hannu Saransaari
+hsaransa at cc dot hut dot fi
+64647L
+
+Brief guide to code
+-------------------
+
+The code includes a lot of features that have very little to do with CUDA
+ray tracing. This is because the ray tracer was originally implemented
+in my another project.
+
+
+
+cudabvh.cpp and cudabvh.hpp
+These files are used to convert bvh tree to arrays used by CUDA ray tracer.
