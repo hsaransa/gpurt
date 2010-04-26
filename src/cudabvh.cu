@@ -34,6 +34,13 @@ struct shared_block
     float3 inv_dir;
 };
 
+__device__ float3 get_vertex(int i)
+{
+    float4 vv = vertices[i];
+    //float4 vv = tex1Dfetch(tex_vertices, tri_i);//vertices[tri_i];
+    return make_float3(vv.x, vv.y, vv.z);
+}
+
 extern "C" __global__ void bvh_trace()
 {
     //int block = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
@@ -266,15 +273,9 @@ extern "C" __global__ void bvh_trace()
 
                     // Moller-Trumbore triangle intersection
 
-                    float4 vv = vertices[tri_i];
-                    //float4 vv = tex1Dfetch(tex_vertices, tri_i);//vertices[tri_i];
-                    float3 v0 = make_float3(vv.x, vv.y, vv.z);
-                    vv = vertices[tri_i+1];
-                    //vv = tex1Dfetch(tex_vertices, tri_i+1);//vertices[tri_i];
-                    float3 v1 = make_float3(vv.x, vv.y, vv.z);
-                    vv = vertices[tri_i+2];
-                    //vv = tex1Dfetch(tex_vertices, tri_i+2);//vertices[tri_i];
-                    float3 v2 = make_float3(vv.x, vv.y, vv.z);
+                    float3 v0 = get_vertex(tri_i);
+                    float3 v1 = get_vertex(tri_i+1);
+                    float3 v2 = get_vertex(tri_i+2);
 
                     float3 E1 = v1 - v0;
                     float3 E2 = v2 - v0;
@@ -300,11 +301,23 @@ extern "C" __global__ void bvh_trace()
                                 hit_t = t;
                                 //hit_u = u;
                                 //hit_v = v;
-                                int r = t * 500.f;
-                                int g = t * 1500.f;
-                                int b = t * 1000.f;
-                                *(int*)stack[63] = 0xFF8080;
-                                //*(int*)stack[63] = r | g << 8 | b << 16;
+
+                                // "shading" is done for each intersection to
+                                // save registers
+
+                                // Refetch to save registers.
+                                v0 = get_vertex(tri_i);
+                                v1 = get_vertex(tri_i+1);
+                                v2 = get_vertex(tri_i+2);
+
+                                float3 n = cross(v1 - v0, v2 - v0);
+                                n = normalize(n);
+
+                                int r = (n.x * 0.5f + 0.5f) * 255.f;
+                                int g = (n.y * 0.5f + 0.5f) * 255.f;
+                                int b = (n.z * 0.5f + 0.5f) * 255.f;
+
+                                *(int*)stack[63] = r | g << 8 | b << 16;
                             }
                         }
                     }

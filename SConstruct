@@ -12,6 +12,8 @@ use_sdl  = True
 use_gl   = True
 use_cuda = True
 
+cuda_regcount = int(ARGUMENTS.get('cuda_regcount', 32))
+
 have_openexr = int(ARGUMENTS.get('have_openexr', 1))
 have_pngwriter = int(ARGUMENTS.get('have_pngwriter', 1))
 
@@ -95,9 +97,10 @@ if not use_cuda:
 else:
   for cu in glob.glob('src/*.cu'):
     b = os.path.basename(cu)
+    b, ext = b.rsplit(".")
 
-    if not env.Command(b + 'bin', [cu,'src/cudavec.h'], \
-      'nvcc -m32 -maxrregcount 32 -use_fast_math -arch sm_11 -cubin ' + cu):
+    if not env.Command(b + '.cubin', [cu, 'src/cudavec.h'], \
+      'nvcc -m32 -maxrregcount %d -use_fast_math -arch sm_11 -cubin %s' % (cuda_regcount, cu)):
       os.exit(1)
 
 # Done!

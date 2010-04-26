@@ -6,10 +6,10 @@
 #include "zorder.hpp"
 #include "cuda.hpp"
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 800
-#define RENDER_WIDTH 128
-#define RENDER_HEIGHT 128
+#define WINDOW_WIDTH 1024
+#define WINDOW_HEIGHT 1024
+#define RENDER_WIDTH 1024
+#define RENDER_HEIGHT 1024
 
 using namespace dn;
 
@@ -179,6 +179,7 @@ static void draw_rt_cpu()
             *p++ = 0xFF;
         }
 
+    glDisable(GL_DEPTH_TEST);
     glPixelZoom(WINDOW_WIDTH / (float)RENDER_WIDTH, WINDOW_HEIGHT / (float)RENDER_HEIGHT);
     glDrawPixels(RENDER_WIDTH, RENDER_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 
@@ -202,16 +203,15 @@ static void draw_rt_cuda()
     module->prepare_launch("bvh_trace");
 
     CudaStream* strm = new CudaStream();
+    CudaMeasureTime mt;
     module->launch(strm, 32, 32);
-    delete strm;
+    float t = mt.measure(strm);
+
+    fprintf(stderr, "render took %f\n", t);
 
     glDisable(GL_DEPTH_TEST);
-
     glPixelZoom(WINDOW_WIDTH / (float)RENDER_WIDTH, WINDOW_HEIGHT / (float)RENDER_HEIGHT);
     glDrawPixels(RENDER_WIDTH, RENDER_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, cuda_result->get_host_ptr());
-
-
-
 }
 
 static void move(const Vector3f& m)
@@ -281,6 +281,19 @@ int main()
 
                 default:
                     break;
+                }
+                break;
+
+            case SDL_MOUSEMOTION:
+                if (ev.motion.state & 1)
+                {
+                    float fdx = ev.motion.xrel / 400.;
+                    float fdy = ev.motion.yrel / 400.;
+
+                    cam_to_view =
+                        rotate(Vector3f(1.0f, 0.0, 0.0), fdy) *
+                        rotate(Vector3f(0.0, 1.0f, 0.0), fdx) *
+                        cam_to_view;
                 }
                 break;
 

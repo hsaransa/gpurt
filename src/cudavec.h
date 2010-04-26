@@ -34,6 +34,16 @@ __device__ float3 cross(float3 a, float3 b)
             a.x * b.y - a.y * b.x);
 }
 
+__device__ float length(float3 v)
+{
+    return sqrtf(dot(v, v));
+}
+
+__device__ float3 normalize(float3 v)
+{
+    return v * (1.f / length(v));
+}
+
 __device__ float3 xyz(float4 v)
 {
     return make_float3(v.x, v.y, v.z);
