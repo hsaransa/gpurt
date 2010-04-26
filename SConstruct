@@ -29,7 +29,7 @@ else:
 env.Append(CPPFLAGS=['-Wall'])
 
 if not release:
-  env.Append(CPPFLAGS=['-g', '-O0'])
+  env.Append(CPPFLAGS=['-g', '-O1'])
 else:
   env.Append(CPPDEFINES=[('NDEBUG')])
   env.Append(CPPFLAGS=['-g', '-O2', '-ffast-math', '-fomit-frame-pointer'])

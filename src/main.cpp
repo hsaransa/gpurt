@@ -38,7 +38,7 @@ static void init()
 
     fprintf(stderr, "loading model\n");
 
-    ObjLoader obj("bunny.obj");
+    ObjLoader obj("conference.obj");
 
     for (int i = 0; i < (int)obj.polygons.size(); i++)
     {
@@ -204,10 +204,9 @@ static void draw_rt_cuda()
 
     CudaStream* strm = new CudaStream();
     CudaMeasureTime mt;
-    module->launch(strm, 32, 32);
+    module->launch(strm, 16, 16);
     float t = mt.measure(strm);
-
-    fprintf(stderr, "render took %f\n", t);
+    fprintf(stderr, "render took %f ms\n", t);
 
     glDisable(GL_DEPTH_TEST);
     glPixelZoom(WINDOW_WIDTH / (float)RENDER_WIDTH, WINDOW_HEIGHT / (float)RENDER_HEIGHT);
@@ -277,6 +276,32 @@ int main()
                 case SDLK_3:
                     fprintf(stderr, "rendering using cuda ray tracing\n");
                     mode = RENDER_RT_CUDA;
+                    break;
+
+                case SDLK_u:
+                    {
+                        FILE* fp = fopen("camera.txt", "wt");
+                        for (int i = 0; i < 16; i++)
+                            fprintf(fp, "%f ", cam_to_view.data()[i]);
+                        for (int i = 0; i < 16; i++)
+                            fprintf(fp, "%f ", cam_to_clip.data()[i]);
+                        fclose(fp);
+
+                        fprintf(stderr, "save camera to camera.txt\n");
+                    }
+                    break;
+
+                case SDLK_p:
+                    {
+                        FILE* fp = fopen("camera.txt", "rt");
+                        for (int i = 0; i < 16; i++)
+                            fscanf(fp, "%f", &cam_to_view.data()[i]);
+                        for (int i = 0; i < 16; i++)
+                            fscanf(fp, "%f", &cam_to_clip.data()[i]);
+                        fclose(fp);
+
+                        fprintf(stderr, "camera lodaded from camera.txt\n");
+                    }
                     break;
 
                 default:

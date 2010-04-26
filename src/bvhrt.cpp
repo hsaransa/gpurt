@@ -51,7 +51,7 @@ struct Sorter
 
 BVHRT::Node* BVHRT::build(int* prims, int n)
 {
-    if (n <= 4)
+    if (n <= 3)
         return build_leaf(prims, n);
 
     AABBf aabb;

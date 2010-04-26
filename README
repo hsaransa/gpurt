@@ -4,15 +4,56 @@ CUDA ray tracer for GPGPU course
 Hannu Saransaari
 hsaransa at cc dot hut dot fi
 64647L
+26.4.2010
+
+Introduction
+------------
+
+User interface is pretty intuitive, you can move camera using arrow keys and
+rotate camera by dragging mouse while pressing the left mouse button.
+
+Rendering mode can be changed by pressing numbers 1, 2 and 3. 1 means OpenGL
+rendering, 2 means CPU ray tracer and 3 means CUDA ray tracer. Note that CPU
+ray tracer is unoptimized and even a single frame takes several seconds to
+render.
+
+To ease comparing performance, button 'u' can be used to save the camera and
+'p' to load previously saved camera. camera.txt in the package is for
+conference room.
 
 Brief guide to code
 -------------------
 
-The code includes a lot of features that have very little to do with CUDA
-ray tracing. This is because the ray tracer was originally implemented
-in my another project.
+The code includes a lot of stuff that has very little to do with CUDA ray
+tracing. This is because the ray tracer was originally implemented in my
+another project.
 
+main.cpp
+This file includes main(). It also loads 3d object, cuda module, renders stuff
+and handles user interface.
 
+bvhrt.cpp and bvhrt.hpp
+These files build BVH tree using greedy top-down surface area heuristic.
 
 cudabvh.cpp and cudabvh.hpp
 These files are used to convert bvh tree to arrays used by CUDA ray tracer.
+
+cudabvh.cu and cudavec.h
+BVH traversal kernel in cuda.
+
+zorder.cpp and zorder.hpp
+These files generate Z-order permutation tables.
+
+objloader.cpp and objloader.hpp
+These load the standard Autodeks .obj file.
+
+Misc
+----
+
+bunny.obj is the famous Stanford Bunny. http://graphics.stanford.edu/data/3Dscanrep/
+
+conference.obj is made by Anat Grynberg and Greg Ward. http://radsite.lbl.gov/mgf/scenes.html
+
+The optimizations in the kernel are based on the paper written by Timo Aila and
+Samuli Laine. http://www.tml.tkk.fi/~timo/
+
