@@ -9,7 +9,7 @@
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 1024
 #define RENDER_WIDTH 1024
-#define RENDER_HEIGHT 1024
+#define RENDER_HEIGHT 768
 
 using namespace dn;
 
@@ -87,7 +87,7 @@ static void init()
 
     // Set textures also. Kernel may use either one.
 
-    // textures are actually bounded to functions so function must be prepared beforehand
+    // textures are actually bound to functions so function must be prepared beforehand
     module->prepare_launch("bvh_trace");
     module->get_texture("tex_nodes")->set(cudabvh->get_cuda_nodes(), CudaTexture::INT32, 2);
     module->get_texture("tex_aabbs_x")->set(cudabvh->get_cuda_aabbs_x(), CudaTexture::FLOAT, 4);
@@ -218,6 +218,19 @@ static void move(const Vector3f& m)
     cam_to_view = translate(m) * cam_to_view;
 }
 
+static void load_camera()
+{
+    FILE* fp = fopen("camera.txt", "rt");
+    assert(fp);
+    for (int i = 0; i < 16; i++)
+        fscanf(fp, "%f", &cam_to_view.data()[i]);
+    for (int i = 0; i < 16; i++)
+        fscanf(fp, "%f", &cam_to_clip.data()[i]);
+    fclose(fp);
+
+    fprintf(stderr, "camera loaded from camera.txt\n");
+}
+
 int main()
 {
     init();
@@ -242,7 +255,12 @@ int main()
     Vector3f up = Vector3f(0.f, 1.f, 0.f);
     cam_to_view = look_at<float>(eye, center, up);
 
+    load_camera();
+
     int prev_ticks = SDL_GetTicks();
+
+    int last_ticks = prev_ticks;
+    int frames = 0;
 
     while (1)
     {
@@ -266,16 +284,22 @@ int main()
                 case SDLK_1:
                     fprintf(stderr, "rendering using OpenGL\n");
                     mode = RENDER_GL;
+                    last_ticks = SDL_GetTicks();
+                    frames = 0;
                     break;
 
                 case SDLK_2:
                     fprintf(stderr, "rendering using cpu ray tracing\n");
                     mode = RENDER_RT_CPU;
+                    last_ticks = SDL_GetTicks();
+                    frames = 0;
                     break;
 
                 case SDLK_3:
                     fprintf(stderr, "rendering using cuda ray tracing\n");
                     mode = RENDER_RT_CUDA;
+                    last_ticks = SDL_GetTicks();
+                    frames = 0;
                     break;
 
                 case SDLK_u:
@@ -287,21 +311,12 @@ int main()
                             fprintf(fp, "%f ", cam_to_clip.data()[i]);
                         fclose(fp);
 
-                        fprintf(stderr, "save camera to camera.txt\n");
+                        fprintf(stderr, "saved camera to camera.txt\n");
                     }
                     break;
 
                 case SDLK_p:
-                    {
-                        FILE* fp = fopen("camera.txt", "rt");
-                        for (int i = 0; i < 16; i++)
-                            fscanf(fp, "%f", &cam_to_view.data()[i]);
-                        for (int i = 0; i < 16; i++)
-                            fscanf(fp, "%f", &cam_to_clip.data()[i]);
-                        fclose(fp);
-
-                        fprintf(stderr, "camera lodaded from camera.txt\n");
-                    }
+                    load_camera();
                     break;
 
                 default:
@@ -333,13 +348,13 @@ int main()
 
         Uint8* keys = SDL_GetKeyState(0);
 
-        if (keys[SDLK_UP])
+        if (keys[SDLK_UP] || keys[SDLK_w])
             move(Vector3f(0.f, 0.f, move_speed) * dtf);
-        if (keys[SDLK_DOWN])
+        if (keys[SDLK_DOWN] || keys[SDLK_s])
             move(Vector3f(0.f, 0.f, -move_speed) * dtf);
-        if (keys[SDLK_LEFT])
+        if (keys[SDLK_LEFT] || keys[SDLK_a])
             move(Vector3f(move_speed, 0.f, 0.f) * dtf);
-        if (keys[SDLK_RIGHT])
+        if (keys[SDLK_RIGHT] || keys[SDLK_d])
             move(Vector3f(-move_speed, 0.f, 0.f) * dtf);
 
         // Draw things.
@@ -358,6 +373,9 @@ int main()
         };
 
         SDL_GL_SwapBuffers();
+
+//        frames++;
+//        fprintf(stderr, "average %.2f\n", (SDL_GetTicks() - last_ticks) / (double)frames);
     }
 
     return 0;

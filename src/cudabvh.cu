@@ -61,7 +61,7 @@ extern "C" __global__ void bvh_trace()
     {
         // Fetch ray index.
 
-#define QUEUE 1
+#define QUEUE 2
 
         if (threadIdx.x == 0 && ray_count[threadIdx.y] == 0)
         {
@@ -86,7 +86,7 @@ extern "C" __global__ void bvh_trace()
         int iy = zorder[thread_idx].y;
 
         int* resp = &result[iy * width + ix];
-        *resp = 0x80FF80;
+        //*resp = 0x80FF80;
 
 #if 1
         // Calculate view ray.
@@ -108,9 +108,9 @@ extern "C" __global__ void bvh_trace()
         float3 dir = p1 - p0;
 
         float3 inv_dir;
-        inv_dir.x = dir.x == 0.f ? 1e-32 : 1.f / dir.x;
-        inv_dir.y = dir.y == 0.f ? 1e-32 : 1.f / dir.y;
-        inv_dir.z = dir.z == 0.f ? 1e-32 : 1.f / dir.z;
+        inv_dir.x = dir.x == 0.f ? 1e-32f : 1.f / dir.x;
+        inv_dir.y = dir.y == 0.f ? 1e-32f : 1.f / dir.y;
+        inv_dir.z = dir.z == 0.f ? 1e-32f : 1.f / dir.z;
 
         shared->inv_dir.x = inv_dir.x;
         shared->inv_dir.y = inv_dir.y;
@@ -128,11 +128,11 @@ extern "C" __global__ void bvh_trace()
 
 #define EXIT_NODE 0x66666666
 
-        int debug = 0;
+        //int debug = 0;
         while (node_idx != EXIT_NODE)
         {
-            if (debug++ > 500)
-                break;
+            //if (debug++ > 500)
+            //    break;
 
             if (node_idx >= 0)
             {
@@ -283,8 +283,6 @@ extern "C" __global__ void bvh_trace()
                     float3 P = cross(dir, E2);
 
                     float inv_det = 1.f / dot(E1, P);
-
-                    //float3 T = orig - v0;
 
                     float u = dot(T, P) * inv_det;
 

@@ -53,9 +53,9 @@ int CudaBVH::convert(BVHRT::Node* node, int idx)
     if (node->left)
     {
         // Negative index means leaf.
-        nodes[idx].left_idx = (node->left->left) ? ret : -ret;
+        nodes[idx].left_idx = node->left->is_leaf() ? -ret : ret;
         ret = convert(node->left, ret);
-        nodes[idx].right_idx = (node->right->left) ? ret : -ret;
+        nodes[idx].right_idx = node->right->is_leaf() ? -ret : ret;
         ret = convert(node->right, ret);
 
         aabbs_x[idx].x = node->left->aabb.min.x;

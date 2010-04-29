@@ -16,12 +16,13 @@ namespace dn
         public:
             Node() { left = right = 0; }
             ~Node() { delete left; delete right; }
-            bool is_leaf() const { return left == 0; }
+            bool is_leaf() const { assert((left == 0) == (right == 0)); return left == 0; }
             void check() const;
             int count() const;
             int count_leaves() const;
             int count_inners() const;
             int primitive_max() const;
+            double calculate_sah_cost() const;
 
             AABBf aabb;
             std::vector<int> primitives;

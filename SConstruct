@@ -12,7 +12,7 @@ use_sdl  = True
 use_gl   = True
 use_cuda = True
 
-cuda_regcount = int(ARGUMENTS.get('cuda_regcount', 32))
+cuda_regcount = int(ARGUMENTS.get('cuda_regcount', 23))
 
 have_openexr = int(ARGUMENTS.get('have_openexr', 1))
 have_pngwriter = int(ARGUMENTS.get('have_pngwriter', 1))
