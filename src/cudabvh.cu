@@ -41,6 +41,14 @@ __device__ float3 get_vertex(int i)
     return make_float3(vv.x, vv.y, vv.z);
 }
 
+template<typename T>
+__device__ void swap(T& a, T& b)
+{
+    T t = a;
+    a = b;
+    b = t;
+}
+
 extern "C" __global__ void bvh_trace()
 {
     //int block = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
@@ -124,17 +132,19 @@ extern "C" __global__ void bvh_trace()
 
         stack[63] = (int)resp; // spill result pointer to local stack
 
-        float hit_t = CUDART_INF_F;
+        float hit_t = 1.f; //CUDART_INF_F;
+
+        int tri_i = 0, tri_end = 0;
 
 #define EXIT_NODE 0x66666666
 
         //int debug = 0;
-        while (node_idx != EXIT_NODE)
+        while (node_idx != EXIT_NODE || tri_i < tri_end)
         {
             //if (debug++ > 500)
             //    break;
 
-            if (node_idx >= 0)
+            if (node_idx >= 0 && node_idx != EXIT_NODE)
             {
                 //float3 orig = make_float3(shared[0], shared[1], shared[2]);
                 float3 orig_inv_dir = make_float3(-orig.x * shared->inv_dir.x, -orig.y * shared->inv_dir.y, -orig.z * shared->inv_dir.z);
@@ -144,7 +154,7 @@ extern "C" __global__ void bvh_trace()
                 tmax0 = tmax1 = hit_t;
 
                 {
-                    float4 aabb = tex1Dfetch(tex_aabbs_x, node_idx);//aabbs_x[node_idx];
+                    float4 aabb = tex1Dfetch(tex_aabbs_x, node_idx);
                     //float4 aabb = aabbs_x[node_idx];
 
                     float a0 = aabb.x * shared->inv_dir.x + orig_inv_dir.x;
@@ -159,7 +169,7 @@ extern "C" __global__ void bvh_trace()
                 }
 
                 {
-                    float4 aabb = tex1Dfetch(tex_aabbs_y, node_idx);//aabbs_x[node_idx];
+                    float4 aabb = tex1Dfetch(tex_aabbs_y, node_idx);
                     //float4 aabb = aabbs_y[node_idx];
 
                     float a0 = aabb.x * shared->inv_dir.y + orig_inv_dir.y;
@@ -174,7 +184,7 @@ extern "C" __global__ void bvh_trace()
                 }
 
                 {
-                    float4 aabb = tex1Dfetch(tex_aabbs_z, node_idx);//aabbs_x[node_idx];
+                    float4 aabb = tex1Dfetch(tex_aabbs_z, node_idx);
                     //float4 aabb = aabbs_z[node_idx];
 
                     float a0 = aabb.x * shared->inv_dir.z + orig_inv_dir.z;
@@ -190,15 +200,16 @@ extern "C" __global__ void bvh_trace()
 
                 int2 n = tex1Dfetch(tex_nodes, node_idx);
 
+#if 1
                 if (tmin0 <= tmax0)
                 {
                     if (tmin1 <= tmax1)
                     {
                         if (tmin1 < tmin0)
-                        {
-                            int t = n.x; n.x = n.y; n.y = t;
-                        }
-                        stack[sp++] = n.y;
+                            swap(n.x, n.y);
+
+                        stack[sp] = n.y;
+                        sp++;
                         node_idx = n.x;
                     }
                     else
@@ -213,21 +224,67 @@ extern "C" __global__ void bvh_trace()
                     else
                     {
                         if (sp)
-                            node_idx = stack[--sp];
+                        {
+                            --sp;
+                            node_idx = stack[sp];
+                        }
                         else
                             node_idx = EXIT_NODE;
                     }
                 }
+
+#else
+                // This is almost directly from Timo's kernel.
+                // I had to change it a bit but it doesn't seem to
+                // be faster.
+
+                int traverseChild0 = (tmax0 >= tmin0);
+                int traverseChild1 = (tmax1 >= tmin1);
+
+                //------------------------------------------------------
+                // Traversal decision
+                // - this organization compiled to the fastest code
+                //------------------------------------------------------
+
+                node_idx           = n.x;
+                int nodeAddrChild1 = n.y;
+
+                if(traverseChild0 != traverseChild1)
+                {
+                    if(traverseChild1)
+                        node_idx = nodeAddrChild1;
+                }
+                else
+                {
+                    if(!traverseChild0)	// Neither
+                    {
+                        node_idx = sp ? stack[--sp] : EXIT_NODE;
+                    }
+                    else				// Both
+                    {
+                        if(tmin1 < tmin0)					// Ensure Child0 is near, Child1 is far
+                            swap(node_idx,nodeAddrChild1);			// Happens if child1 intersected AND closer
+                        stack[sp] = nodeAddrChild1;	// push far
+                        ++sp;								// a separate statement thanks to 2.1 compiler shortcoming
+                    }
+                }
+#endif
             }
 
-            if (node_idx < 0)
+            if (node_idx < 0 && tri_i >= tri_end)
             {
                 int2 plop = tex1Dfetch(tex_nodes, -node_idx);
-                int tri_i = plop.x;
-                int tri_end = tri_i + plop.y;
+                tri_i = plop.x;
+                tri_end = tri_i + plop.y;
+
+                if (sp)
+                    node_idx = stack[--sp];
+                else
+                    node_idx = EXIT_NODE;
+            }
 
                 //float orig = make_float3(shared[0], shared[1], shared[2]) - v0;
-                while (tri_i < tri_end)
+                if (tri_i < tri_end)
                 {
 
                     // Woop's triangle intersection wasn't as good.
@@ -323,12 +380,6 @@ extern "C" __global__ void bvh_trace()
 
                     tri_i += 3;
                 }
-
-                if (sp)
-                    node_idx = stack[--sp];
-                else
-                    node_idx = EXIT_NODE;
-            }
         }
 #endif
     }

@@ -238,16 +238,3 @@ int BVHRT::Node::primitive_max() const
                std::max(left ? left->primitive_max() : 0,
                         right ? right->primitive_max() : 0));
 }
-
-double BVHRT::Node::calculate_sah_cost() const
-{
-#if 0
-    if (left || right)
-    {
-        return aabb.get_surface_area();
-    }
-    else
-        return 
-#endif
-
-}

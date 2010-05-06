@@ -14,8 +14,8 @@ use_cuda = True
 
 cuda_regcount = int(ARGUMENTS.get('cuda_regcount', 23))
 
-have_openexr = int(ARGUMENTS.get('have_openexr', 1))
-have_pngwriter = int(ARGUMENTS.get('have_pngwriter', 1))
+have_openexr = int(ARGUMENTS.get('have_openexr', 0))
+have_pngwriter = int(ARGUMENTS.get('have_pngwriter', 0))
 
 # Stuff
 
